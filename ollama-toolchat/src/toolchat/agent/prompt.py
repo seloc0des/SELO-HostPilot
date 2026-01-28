@@ -464,7 +464,28 @@ def format_tool_result(tool_name: str, result: dict) -> str:
                 memory_used = data.get('memory_used_gb', 'N/A')
                 memory_available = memory_total - memory_used if isinstance(memory_total, (int, float)) and isinstance(memory_used, (int, float)) else 'N/A'
                 cpu_percent = data.get('cpu_percent', 'N/A')
-                return f"CPU usage: {cpu_percent}%. RAM: {memory_available:.1f}GB available out of {memory_total:.1f}GB total."
+                
+                result = f"CPU usage: {cpu_percent}%. RAM: {memory_available:.1f}GB available out of {memory_total:.1f}GB total."
+                
+                # Include top processes by CPU
+                top_cpu = data.get('top_cpu_processes', [])
+                if top_cpu:
+                    cpu_list = []
+                    for p in top_cpu[:5]:
+                        cpu_list.append(f"  • {p['name']} (PID {p['pid']}): {p['cpu_percent']:.1f}% CPU")
+                    result += "\n\nTop CPU processes:\n" + "\n".join(cpu_list)
+                
+                # Include top processes by memory
+                top_mem = data.get('top_memory_processes', [])
+                if top_mem:
+                    mem_list = []
+                    for p in top_mem[:5]:
+                        # Calculate MB from percentage
+                        mem_mb = (p['memory_percent'] / 100) * memory_total * 1024 if isinstance(memory_total, (int, float)) else 0
+                        mem_list.append(f"  • {p['name']} (PID {p['pid']}): {p['memory_percent']:.1f}% RAM ({mem_mb:.0f}MB)")
+                    result += "\n\nTop memory processes:\n" + "\n".join(mem_list)
+                
+                return result
             elif 'total_gb' in data and 'free_gb' in data:
                 # Handle disk_free structured data
                 path = data.get('path', 'disk')
@@ -520,10 +541,27 @@ def format_tool_result(tool_name: str, result: dict) -> str:
             elif 'total' in data and 'free' in data:
                 return f"Storage information: {data.get('free', 'N/A')} free out of {data.get('total', 'N/A')} total"
             elif 'exit_code' in data:
-                return f"Operation completed successfully."
+                # Show exit code and any other data present to prevent hallucination
+                exit_code = data.get('exit_code', 0)
+                other_data = {k: v for k, v in data.items() if k != 'exit_code'}
+                if other_data:
+                    data_str = ", ".join([f"{k}: {v}" for k, v in list(other_data.items())[:5]])
+                    return f"Operation completed (exit code {exit_code}). Data: {data_str}"
+                return f"Operation completed with exit code {exit_code}. No additional data returned."
             else:
-                return f"Tool '{tool_name}' completed successfully."
+                # IMPORTANT: Always show actual data to prevent model hallucination
+                # Convert dict to readable format so model has real data
+                data_preview = []
+                for key, value in list(data.items())[:10]:
+                    if isinstance(value, (list, dict)):
+                        data_preview.append(f"{key}: {type(value).__name__} with {len(value)} items")
+                    else:
+                        data_preview.append(f"{key}: {value}")
+                if data_preview:
+                    return f"Tool '{tool_name}' returned:\n" + "\n".join(data_preview)
+                return f"Tool '{tool_name}' completed but returned no data."
         else:
-            return f"Tool '{tool_name}' completed successfully."
+            # Non-dict data - show it directly
+            return f"Tool '{tool_name}' returned: {str(data)[:500]}"
     else:
         return f"Tool '{tool_name}' failed. Error: {result.get('message')}"
