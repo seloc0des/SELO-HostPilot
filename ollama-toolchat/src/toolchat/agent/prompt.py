@@ -89,6 +89,27 @@ You: {{"tool": "lsblk_command", "args": {{}}, "explain": "Listing block devices 
 User: "show disk usage"
 You: {{"tool": "df_command", "args": {{}}, "explain": "Checking disk filesystem usage"}}
 
+User: "list files in /home/user/Documents"
+You: {{"tool": "fd_command", "args": {{"path": "/home/user/Documents"}}, "explain": "Listing files in /home/user/Documents"}}
+
+User: "find files in /mnt/server/Projects"
+You: {{"tool": "fd_command", "args": {{"path": "/mnt/server/Projects"}}, "explain": "Searching files in /mnt/server/Projects"}}
+
+User: "what files are in /var/log?"
+You: {{"tool": "fd_command", "args": {{"path": "/var/log"}}, "explain": "Listing files in /var/log"}}
+
+User: "show me the directory tree of /home/user"
+You: {{"tool": "tree_command", "args": {{"path": "/home/user"}}, "explain": "Displaying directory structure"}}
+
+User: "how big is /mnt/data?"
+You: {{"tool": "directory_size", "args": {{"path": "/mnt/data"}}, "explain": "Calculating directory size"}}
+
+IMPORTANT - PATH ARGUMENTS:
+When a user mentions a specific directory or path (like /mnt/server/Documents or /home/user), you MUST include it in the args:
+- fd_command, find_command, tree_command, directory_size all REQUIRE a "path" argument
+- Extract the path from the user's message and include it: {{"path": "/the/path/mentioned"}}
+- NEVER call these tools with empty args {{}} - always include the path
+
 AFTER TOOL EXECUTION (when you see tool results in a system message):
 **CRITICAL: YOU ARE NOW IN CONVERSATION MODE - NOT TOOL CALLING MODE**
 
