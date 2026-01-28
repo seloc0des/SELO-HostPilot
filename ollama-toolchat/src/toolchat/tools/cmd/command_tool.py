@@ -1,6 +1,6 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import jsonschema
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from ..base import BaseTool, ToolSpec, ToolResult, ToolTier
 from ...infra.logging import get_logger
 from .cmd_runner import command_runner
@@ -13,6 +13,7 @@ class CommandToolSpec(ToolSpec):
     
     binary: str
     argv_template: List[str]
+    default_args: Dict[str, Any] = Field(default_factory=dict)
 
 
 class CommandTool(BaseTool):
@@ -58,7 +59,9 @@ class CommandTool(BaseTool):
             )
         
         try:
-            command = self._build_command(args)
+            # Merge default args with provided args (provided args take precedence)
+            merged_args = {**self.command_spec.default_args, **args}
+            command = self._build_command(merged_args)
             
             logger.info(f"Executing command tool: {self.spec.name}", extra={
                 "tool_name": self.spec.name,

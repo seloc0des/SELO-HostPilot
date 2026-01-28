@@ -8,12 +8,12 @@ def create_find_tool():
     """Find files and directories."""
     spec = CommandToolSpec(
         name="find_command",
-        description="Search for files and directories. Use with path and options like -name, -type, -size, -mtime. Limited to READ_ROOTS.",
+        description="Search for files and directories. List all files in a path, or filter by name pattern.",
         args_schema={
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Path to search in"},
-                "name": {"type": "string", "description": "Name pattern to search for"}
+                "path": {"type": "string", "description": "Path/directory to search in (required)"},
+                "name": {"type": "string", "description": "Name pattern to filter files (optional, defaults to '*' for all files)"}
             },
             "required": ["path"]
         },
@@ -23,7 +23,8 @@ def create_find_tool():
         allows_network=False,
         timeout_sec=30,
         binary="/usr/bin/find",
-        argv_template=["{path}", "-maxdepth", "3", "-name", "{name}"]
+        argv_template=["{path}", "-maxdepth", "3", "-name", "{name}"],
+        default_args={"name": "*"}
     )
     return CommandTool(spec)
 
@@ -32,14 +33,14 @@ def create_fd_tool():
     """Modern file finder (fd-find)."""
     spec = CommandToolSpec(
         name="fd_command",
-        description="Fast file finder (modern alternative to find). Search by name pattern.",
+        description="Fast file finder. List or search files in a directory. Use pattern to filter by name (optional, defaults to all files).",
         args_schema={
             "type": "object",
             "properties": {
-                "pattern": {"type": "string", "description": "Pattern to search for"},
-                "path": {"type": "string", "description": "Path to search in"}
+                "path": {"type": "string", "description": "Path/directory to search in (required)"},
+                "pattern": {"type": "string", "description": "Pattern to filter files by name (optional, defaults to '.' for all files)"}
             },
-            "required": ["pattern"]
+            "required": ["path"]
         },
         tier=ToolTier.READ_ONLY,
         requires_confirmation=False,
@@ -47,7 +48,8 @@ def create_fd_tool():
         allows_network=False,
         timeout_sec=20,
         binary="/usr/bin/fdfind",
-        argv_template=["-d", "3", "{pattern}", "{path}"]
+        argv_template=["-d", "3", "{pattern}", "{path}"],
+        default_args={"pattern": "."}
     )
     return CommandTool(spec)
 
@@ -56,12 +58,12 @@ def create_rg_tool():
     """Ripgrep - fast text search."""
     spec = CommandToolSpec(
         name="rg_command",
-        description="Search file contents using ripgrep (very fast grep alternative)",
+        description="Search file contents using ripgrep. Requires a text pattern to search for.",
         args_schema={
             "type": "object",
             "properties": {
-                "pattern": {"type": "string", "description": "Text pattern to search for"},
-                "path": {"type": "string", "description": "Path to search in"}
+                "pattern": {"type": "string", "description": "Text pattern to search for (required)"},
+                "path": {"type": "string", "description": "Path to search in (optional, defaults to current directory)"}
             },
             "required": ["pattern"]
         },
@@ -71,7 +73,8 @@ def create_rg_tool():
         allows_network=False,
         timeout_sec=30,
         binary="/usr/bin/rg",
-        argv_template=["-i", "--max-depth", "3", "{pattern}", "{path}"]
+        argv_template=["-i", "--max-depth", "3", "{pattern}", "{path}"],
+        default_args={"path": "."}
     )
     return CommandTool(spec)
 
