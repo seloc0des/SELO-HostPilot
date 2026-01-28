@@ -67,6 +67,9 @@ TOOL_ALIASES: Dict[str, str] = {
     "systemctl": "systemctl_status",
     "apt_install": "apt_install",
     "apt_update": "apt_update",
+    # File utilities
+    "duplicates": "find_duplicates",
+    "find_dups": "find_duplicates",
 }
 
 

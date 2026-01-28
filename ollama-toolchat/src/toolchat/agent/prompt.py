@@ -104,11 +104,21 @@ You: {{"tool": "tree_command", "args": {{"path": "/home/user"}}, "explain": "Dis
 User: "how big is /mnt/data?"
 You: {{"tool": "directory_size", "args": {{"path": "/mnt/data"}}, "explain": "Calculating directory size"}}
 
+User: "find duplicate files in /home/user/Downloads"
+You: {{"tool": "find_duplicates", "args": {{"path": "/home/user/Downloads"}}, "explain": "Scanning for duplicate files"}}
+
+User: "are there any duplicate files in /mnt/server/Documents?"
+You: {{"tool": "find_duplicates", "args": {{"path": "/mnt/server/Documents"}}, "explain": "Finding duplicate files by content hash"}}
+
+User: "how many duplicates are in /mnt/local/Projects?"
+You: {{"tool": "find_duplicates", "args": {{"path": "/mnt/local/Projects"}}, "explain": "Scanning for duplicate files"}}
+
 IMPORTANT - PATH ARGUMENTS:
 When a user mentions a specific directory or path (like /mnt/server/Documents or /home/user), you MUST include it in the args:
-- fd_command, find_command, tree_command, directory_size all REQUIRE a "path" argument
+- fd_command, find_command, tree_command, directory_size, find_duplicates all REQUIRE a "path" argument
 - Extract the path from the user's message and include it: {{"path": "/the/path/mentioned"}}
 - NEVER call these tools with empty args {{}} - always include the path
+- For duplicate file questions, use find_duplicates with the path
 
 AFTER TOOL EXECUTION (when you see tool results in a system message):
 **CRITICAL: YOU ARE NOW IN CONVERSATION MODE - NOT TOOL CALLING MODE**
@@ -473,6 +483,26 @@ def format_tool_result(tool_name: str, result: dict) -> str:
                     dir_list = "\n".join([f"• {d['size']}\t{d['path']}" for d in top_dirs[:10]])
                     return f"Directory size analysis for {analyzed} (depth={depth}, {total} dirs):\n{dir_list}"
                 return f"Directory size analysis completed for {analyzed}."
+            elif 'scanned_path' in data and 'duplicate_groups' in data:
+                # Handle find_duplicates structured data
+                scanned = data.get('scanned_path', 'N/A')
+                files_scanned = data.get('files_scanned', 0)
+                dup_groups = data.get('duplicate_groups', 0)
+                total_dups = data.get('total_duplicate_files', 0)
+                wasted = data.get('total_wasted_space', '0B')
+                top_dups = data.get('top_duplicates', [])
+                
+                if dup_groups == 0:
+                    return f"No duplicate files found in {scanned} ({files_scanned} files scanned)."
+                
+                summary = f"Found {dup_groups} duplicate groups ({total_dups} duplicate files) in {scanned}.\nWasted space: {wasted}\n"
+                if top_dups:
+                    dup_list = []
+                    for d in top_dups[:10]:
+                        files_preview = ", ".join([f.split('/')[-1] for f in d['files'][:2]])
+                        dup_list.append(f"• {d['count']} copies of {d['size']} file ({d['wasted_space']} wasted): {files_preview}")
+                    summary += "Top duplicates:\n" + "\n".join(dup_list)
+                return summary
             elif 'dry_run' in data and 'total_photos' in data:
                 # Handle organize_photos structured data
                 dry_run = data.get('dry_run', True)

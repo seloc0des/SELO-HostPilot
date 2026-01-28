@@ -11,6 +11,7 @@ from .tools.health import SystemHealthTool
 from .tools.photos import OrganizePhotosTool
 from .tools.gpu import GPUTemperatureTool
 from .tools.directory_size import DirectorySizeTool
+from .tools.duplicates import DuplicateFinderTool
 from .tools.cmd.specs_storage import (
     create_df_tool, create_du_tool, create_lsblk_tool, create_findmnt_tool
 )
@@ -87,6 +88,7 @@ async def startup_event():
     registry.register(OrganizePhotosTool())
     registry.register(GPUTemperatureTool())
     registry.register(DirectorySizeTool())
+    registry.register(DuplicateFinderTool())
     
     # Register storage command tools
     try:
