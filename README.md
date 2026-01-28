@@ -6,11 +6,12 @@ SELOdev’s **local-first host control companion** built for Pop!_OS. SELO HostP
 
 - 🤖 **Natural Language Interface** - Talk to your host using everyday language
 - 🔒 **Security First** - Sandboxed execution with strict path controls, confirmation gates, and auditing
-- 🛠️ **Extensive Tool Library** - 20+ curated system utilities plus Python-native helpers from SELOdev's tool registry
+- 🛠️ **Extensive Tool Library** - 49 curated system utilities plus Python-native helpers from SELOdev's tool registry
 - 🌐 **Local-Only** - SELO HostPilot runs entirely on your machine with no outbound data
 - 📊 **System Diagnostics** - Deep insights across disk, CPU, memory, processes, logs, and hardware sensors
 - 📸 **Photo Organization** - Automatically regroup photos by date with exiftool + Pillow fallbacks
-- 💾 **Persistent History** - SQLite-backed conversation storage in `ollama-toolchat.db`
+- � **Duplicate File Finder** - Find and report duplicate files using content hashing
+- � **Persistent History** - SQLite-backed conversation storage in `ollama-toolchat.db`
 - 📝 **Audit Logging** - Full audit trail in `ollama-toolchat-audit.db` for every tool execution
 - 🎯 **Dynamic Model Selection** - Swap Ollama models instantly from the web header
 - ⚡ **Smart Auto-Responses** - Instant answers for common questions about capabilities without LLM latency
@@ -154,6 +155,12 @@ User: what can you do?
 Assistant: [Instant response with comprehensive feature overview]
 ```
 
+**Find duplicate files:**
+```
+User: Find duplicate files in /mnt/local/Projects
+Assistant: [Scans directory and reports duplicate groups with wasted space]
+```
+
 ## Smart Auto-Responses
 
 SELO HostPilot includes intelligent auto-response functionality that provides instant answers to common questions about capabilities without requiring LLM inference. This ensures faster responses and consistent information.
@@ -226,6 +233,21 @@ Organize photos into directories by date taken. Uses exiftool when available, fa
 
 **Example:** "Organize photos in ~/Pictures/Inbox by year and month"
 
+#### 4. find_duplicates (Tier 0 - Read-Only)
+Find duplicate files in a directory by comparing file hashes. Uses a two-pass algorithm (size grouping + MD5 hashing) for efficiency.
+
+**Example:** "Find duplicate files in /mnt/local/Projects"
+
+#### 5. directory_size (Tier 0 - Read-Only)
+Analyze directory sizes to find which directories are taking up the most space.
+
+**Example:** "How big is /home/sean/Downloads?"
+
+#### 6. gpu_temperature (Tier 0 - Read-Only)
+Check NVIDIA GPU temperature and utilization using nvidia-smi.
+
+**Example:** "What's my GPU temperature?"
+
 ### Command Tools (System Utilities)
 
 #### Storage Tools (Tier 0)
@@ -250,6 +272,31 @@ Organize photos into directories by date taken. Uses exiftool when available, fa
 - **lsusb_command** - List USB devices
 - **lscpu_command** - CPU architecture information
 - **sensors_command** - Hardware sensor readings (requires lm-sensors)
+
+#### File Search Tools (Tier 0)
+- **fd_command** - Fast file finder (modern alternative to find)
+- **find_command** - Search for files and directories
+- **rg_command** - Search file contents using ripgrep
+- **tree_command** - Display directory structure as a tree
+
+#### Network Tools (Tier 0)
+- **ip_addr_command** - Show IP addresses and network interfaces
+- **ip_route_command** - Show routing table
+- **ss_command** - Show socket statistics
+- **ping_command** - Test network connectivity
+- **nmcli_command** - NetworkManager CLI
+- **resolvectl_command** - DNS resolver status
+
+#### Security Tools (Tier 0)
+- **ufw_status_command** - Firewall status
+- **aa_status_command** - AppArmor status
+- **loginctl_command** - Login session information
+
+#### System Info Tools (Tier 0)
+- **uname_command** - System information
+- **hostname_command** - System hostname
+- **whoami_command** - Current user
+- **uptime_command** - System uptime and load
 
 **Note:** Command tools are automatically registered if the underlying system utilities are available.
 
@@ -363,11 +410,36 @@ The photo organizer now:
 
 ### Command Tool System
 
-20+ system commands safely wrapped:
+49 system commands safely wrapped:
 - Automatic binary path resolution
 - Safe argument templating
 - Output truncation and timeouts
 - Graceful degradation if tools unavailable
+
+### Tool Name Aliases
+
+The system supports natural tool name aliases, so you can use common command names:
+- `fd` → `fd_command`
+- `find` → `find_command`
+- `df` → `df_command`
+- `tree` → `tree_command`
+- `duplicates` → `find_duplicates`
+- And 50+ more aliases
+
+This means the LLM can use familiar command names and the system will resolve them to the correct registered tool.
+
+### Duplicate File Finder
+
+The `find_duplicates` tool uses an efficient two-pass algorithm:
+1. **Size grouping** - Files are first grouped by size (potential duplicates)
+2. **Quick hash** - Files with matching sizes are hashed (first 8KB + size)
+3. **Full verification** - Matching quick hashes are verified with full MD5
+
+Features:
+- Scans up to 10,000 files with configurable depth
+- Skips common non-content directories (`.git`, `node_modules`, `__pycache__`)
+- Reports wasted space and top duplicate groups
+- Minimum file size filter to skip tiny files
 
 ## API Endpoints
 
